@@ -1,0 +1,78 @@
+name: Producer Azure Deployment
+on:
+  push:
+    branches:
+      - lab2
+    paths:
+      - 'producer/*.py'
+      - 'producer/Dockerfile'
+
+jobs:
+  editorconfig:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
+            
+      - name: editorconfig-checker-action
+        uses: editorconfig-checker/action-editorconfig-checker@v2
+            
+  
+  linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
+      
+      - name: Linter Check Action
+        uses: wearerequired/lint-action@v2.3.0
+
+  build_and_deploy_producer:
+    if: ${{ github.event_name == 'push' }}
+    needs: [editorconfig, linter]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIAL }}
+
+      - name: Docker Setup QEMU
+        uses: docker/setup-qemu-action@v3.0.0
+      
+      - name: Docker Setup Buildx
+        uses: docker/setup-buildx-action@v3.0.0
+    
+      - name: Checkout Producer
+        uses: actions/checkout@v4.1.1  
+
+      - name: Build the Docker image
+        working-directory: 'producer'
+        run: |
+          docker build -t producer-image:${{ github.sha }} .	
+          
+      - name: Login to Azure Container Registry
+        run: az acr login --name xxx
+                
+      - name: Push Producer Image to ACR
+        run: |
+          docker tag producer-image:${{ github.sha }} xxx.azurecr.io/producer-image:${{ github.sha }}
+          docker push xxx.azurecr.io/producer-image:${{ github.sha }}
+
+      - name: Login to Azure Container Registry
+        run: az acr login --name xxx
+      
+      - name: Print Debug Information
+        run: |
+          echo "Registry URL: $REGISTRY_URL"
+          echo "Image to Deploy: $IMAGE_TO_DEPLOY"
+          az acr list --resource-group fervjestina --query "[].{acrLoginServer:loginServer, adminUserEnabled:adminUserEnabled}" --output table
+        
+
+      - name: Azure Container Apps Build and Deploy
+        uses: Azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: fervjestina
+          containerAppName: producer
+          imageToDeploy: xxx.azurecr.io/producer-image:${{ github.sha }}
+          acrName: xxx

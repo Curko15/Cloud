@@ -1,0 +1,14 @@
+{
+    "Name": "CosmosDB",
+    "DataSourceType": "DocumentDB",
+    "DocumentDbProperties": {
+        "AccountId": "adtpiuocosmosdb",
+        "AccountKey": "********",
+        "Database": "redditPosts",
+        "ContainerName": "container1",
+        "DocumentId": "Id",
+        "AuthenticationMode": "ConnectionString"
+    },
+    "DataSourceCredentialDomain": "c3041bed-af15-4453-b6aa-00ab203bbd88.StreamAnalystics",
+    "ScriptType": "Output"
+}
